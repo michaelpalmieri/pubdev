@@ -11,6 +11,7 @@
     .EXAMPLE
         Get-bulkinfo -server servername 
         https://adamtheautomator.com/powershell-get-ip-address/
+Free Code to Use at your own risk. I assume no risk.  
 
 #>
 
