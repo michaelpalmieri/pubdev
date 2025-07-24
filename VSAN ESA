@@ -1,0 +1,166 @@
+vSAN ESA Deployment Plan (3 Hosts, 2 x 10GbE NICs)
+✅ 1. Requirements and Prerequisites
+A. Hardware
+3 ESXi hosts, each with:
+
+2 x 10GbE network adapters
+
+NVMe or high-performance SSDs (ESA requires NVMe or certified all-flash devices)
+
+Minimum 1 high-endurance device per host (no disk groups required)
+
+Hardware must be vSAN ESA Ready Node Certified
+
+B. Software
+ESXi 8.0 U1 or later (vSAN ESA introduced in 8.0)
+
+vCenter Server 8.0 U1 or later
+
+Valid vSAN Enterprise or vSAN ESA license
+
+C. Other Requirements
+All devices must support vSAN ESA certification
+
+vCenter must be deployed and operational
+
+Enable vSAN ESA during cluster creation (only available in vSphere 8+)
+
+🧱 2. Network Design (2 x 10GbE NICs per Host)
+A. Network Services & VLANs
+Service	VMkernel	VLAN ID	Teaming Policy	MTU
+Management	vmk0	10	vmnic0 active, vmnic1 standby	1500
+vMotion	vmk1	20	vmnic1 active, vmnic0 standby	9000
+vSAN ESA	vmk2	30	vmnic0 active, vmnic1 standby	9000
+
+B. Switching Design
+Use vSphere Distributed Switch (vDS) for simplified and centralized management
+
+Jumbo Frames (MTU 9000) for vMotion and vSAN ESA
+
+Enable Network I/O Control (NIOC) to prioritize vSAN traffic
+
+🛠️ 3. Deployment Steps
+🔹 Step 1: Install ESXi 8.x on All Hosts
+Install ESXi 8.0 U1 or later
+
+Configure Management IP (vmk0)
+
+Set hostnames, DNS, and NTP
+
+Verify hardware compatibility via VMware Compatibility Guide
+
+🔹 Step 2: Configure Networking
+a. Create a Distributed Switch (vDS)
+Add both 10GbE NICs to the switch
+
+Create three port groups:
+
+PG-Management (VLAN 10)
+
+PG-vMotion (VLAN 20)
+
+PG-vSAN (VLAN 30)
+
+b. Create VMkernel Interfaces
+vmk0 → PG-Management (VLAN 10) → MTU 1500
+
+vmk1 → PG-vMotion (VLAN 20) → MTU 9000
+
+vmk2 → PG-vSAN (VLAN 30) → MTU 9000
+
+c. Verify Network
+Run MTU test to check jumbo frame support:
+
+bash
+Copy
+Edit
+vmkping -I vmk2 <peer_ip> -d -s 8972
+🔹 Step 3: Add Hosts to vCenter
+Add the 3 ESXi hosts to vCenter
+
+Create a new cluster named vSAN-ESA-Cluster
+
+Enable:
+
+vSphere HA
+
+vSphere DRS
+
+vSAN
+
+🔹 Step 4: Enable vSAN ESA
+Right-click the cluster → "Enable vSAN"
+
+Choose "vSAN ESA (Express Storage Architecture)"
+
+Confirm:
+
+All hosts use certified NVMe devices
+
+No disk groups are needed (ESA uses a unified storage pool)
+
+vSAN will automatically detect eligible storage devices
+
+Configure vSAN network (choose vmk2 on each host)
+
+🔹 Step 5: Claim Devices
+In vCenter → vSAN → Storage → Devices:
+
+Claim all ESA-supported NVMe devices into the storage pool
+
+System creates a single-tier storage pool
+
+No need to manually create disk groups
+
+🔹 Step 6: Configure Storage Policies
+Create VM Storage Policies:
+
+Policy Name	FTT	Failure Method	Use Case
+ESA-FTT1-Mirror	1	RAID-1	Critical VMs
+ESA-FTT1-RAID5	1	Erasure Coding	General workloads
+ESA-FTT0	0	None	Test/dev VMs
+
+RAID-5 requires at least 3 hosts, which is satisfied in this setup.
+
+🔹 Step 7: Validate Cluster Health
+Navigate to Monitor > vSAN > Skyline Health
+
+Confirm all checks pass:
+
+ESA health
+
+Device performance
+
+Network connectivity
+
+Storage pool state
+
+🔹 Step 8: Migrate or Deploy VMs
+Start deploying VMs to the cluster
+
+Apply the appropriate storage policy
+
+Monitor usage in:
+
+vSAN Capacity
+
+Performance service
+
+🔐 4. Best Practices
+Best Practice	Description
+Enable Jumbo Frames	Improves vSAN and vMotion performance
+Use NIOC	Prioritize vSAN traffic over vMotion
+Enable TRIM/UNMAP	Automatically reclaims storage space
+Monitor with Skyline	Continuously check for health issues
+Use vSphere Lifecycle Manager (vLCM)	Simplified upgrades for firmware + software
+
+✅ 5. Validation Checklist
+Task	Status
+All hosts installed with ESXi 8.x	✅
+vDS with VLANs and VMkernel ports	✅
+Jumbo Frames verified	✅
+Hosts added to vCenter	✅
+vSAN ESA enabled and devices claimed	✅
+Storage policies created	✅
+vSphere HA and DRS enabled	✅
+Skyline Health checks green	✅
