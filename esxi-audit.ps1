@@ -76,7 +76,7 @@ if ($IgnoreInvalidCert) {
 }
 
 # ==============================================================================
-# LOGGING FUNCTION (FORMATS OUTPUT LIKE YOUR SCREENSHOT)
+# LOGGING FUNCTION 
 # ==============================================================================
 
 function Write-LogLine {
