@@ -45,6 +45,9 @@ $cred = Get-Credential
   -InputCsvPath ./My-hosts.csv `
   -Credential $cred `
   -IgnoreInvalidCert
+Disclaimer:
+        This software is provided AS-IS with no warranty expressed or implied.
+        Use at your own risk.
 
 ================================================================================
 #>

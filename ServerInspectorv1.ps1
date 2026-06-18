@@ -10,8 +10,10 @@
         Host is a MANDATORY parameter
     .EXAMPLE
         Get-bulkinfo -server servername 
-        https://adamtheautomator.com/powershell-get-ip-address/
-Free Code to Use at your own risk. I assume no risk.  
+Disclaimer:
+        This software is provided AS-IS with no warranty expressed or implied.
+        Use at your own risk.
+
 
 #>
 
