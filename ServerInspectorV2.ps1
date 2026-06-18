@@ -12,8 +12,12 @@ function Get-BulkInfo {
 
 .Usage
    Get-BulkInfo -ComputerName Server01 | ConvertTo-Json -Depth 6
-   
+
    Get-BulkInfo -ComputerName Server01, Server02
+
+   Disclaimer:
+        This software is provided AS-IS with no warranty expressed or implied.
+        Use at your own risk.
 
 #>
 
