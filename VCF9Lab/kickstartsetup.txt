@@ -1,5 +1,9 @@
 # VCF Nested ESXi 9 Automated Deployment Runbook
 
+Disclaimer:
+        This software is provided AS-IS with no warranty expressed or implied.
+        Use at your own risk.
+
 ## Version 1.0
 
 ---

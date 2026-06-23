@@ -1,6 +1,10 @@
 <#
 .SYNOPSIS
     Deploys Nested ESXi VMs with fixed MAC addresses for Kickstart.
+    
+    Disclaimer:
+        This software is provided AS-IS with no warranty expressed or implied.
+        Use at your own risk.
 #>
 
 $ESXiHost = Read-Host "Enter ESXi Host IP or FQDN"
