@@ -1,0 +1,597 @@
+# VCF Nested ESXi 9 Automated Deployment Runbook
+
+## Version 1.0
+
+---
+
+# Objective
+
+Deploy four Nested ESXi 9.0.1 hosts using:
+
+* One customized ESXi ISO
+* Ubuntu Apache Kickstart server
+* DHCP Reservations
+* Unsupported CPU Bypass
+* Static management addressing
+* Automated installation
+
+---
+
+# Environment
+
+## Ubuntu Kickstart Server
+
+| Setting    | Value              |
+| ---------- | ------------------ |
+| IP Address | 172.16.3.30        |
+| Service    | Apache2            |
+| Purpose    | Kickstart Delivery |
+
+---
+
+## Network Configuration
+
+| Setting         | Value           |
+| --------------- | --------------- |
+| Gateway         | 172.16.3.1      |
+| DNS             | 172.16.3.1      |
+| DNS Suffix      | esx.local       |
+| Netmask         | 255.255.255.224 |
+| Management VLAN | 4095            |
+| Port Group      | ALL-VLAN-PG     |
+
+---
+
+# Host Assignments
+
+| Host  | IP Address | MAC Address       |
+| ----- | ---------- | ----------------- |
+| VCF01 | 172.16.3.6 | 00:50:56:11:22:60 |
+| VCF02 | 172.16.3.7 | 00:50:56:11:22:61 |
+| VCF03 | 172.16.3.8 | 00:50:56:11:22:62 |
+| VCF04 | 172.16.3.9 | 00:50:56:11:22:63 |
+
+---
+
+# Secondary NIC Assignments
+
+| Host  | MAC Address       |
+| ----- | ----------------- |
+| VCF01 | 00:50:56:11:23:60 |
+| VCF02 | 00:50:56:11:23:61 |
+| VCF03 | 00:50:56:11:23:62 |
+| VCF04 | 00:50:56:11:23:63 |
+
+---
+
+# DHCP Reservations
+
+## Purpose
+
+ESXi must obtain network connectivity before downloading Kickstart.
+
+## Reservations
+
+```text
+00:50:56:11:22:60 -> 172.16.3.6
+00:50:56:11:22:61 -> 172.16.3.7
+00:50:56:11:22:62 -> 172.16.3.8
+00:50:56:11:22:63 -> 172.16.3.9
+```
+
+## Verification
+
+Verify DHCP server assigns expected addresses.
+
+---
+
+# PART 1 - Ubuntu Kickstart Server
+
+---
+
+## Step 1 - Install Apache
+
+### Purpose
+
+Provides HTTP service for Kickstart delivery.
+
+### Command
+
+```bash
+sudo apt update
+sudo apt install apache2 -y
+```
+
+### Verification
+
+```bash
+sudo systemctl status apache2
+```
+
+Expected:
+
+```text
+active (running)
+```
+
+---
+
+## Step 2 - Create Kickstart Directory
+
+### Purpose
+
+Stores all Kickstart-related files.
+
+### Command
+
+```bash
+sudo mkdir -p /var/www/html/ks
+```
+
+### Verification
+
+```bash
+ls -ld /var/www/html/ks
+```
+
+---
+
+## Step 3 - Create bootstrap.cfg
+
+### Purpose
+
+Generates a host-specific Kickstart based on the DHCP-assigned source IP.
+
+### Command
+
+```bash
+sudo tee /var/www/html/ks/bootstrap.cfg > /dev/null <<'EOF'
+#!/usr/bin/env python3
+import os
+
+hosts = {
+    "172.16.3.6": ("vcf01.esx.local", "172.16.3.6"),
+    "172.16.3.7": ("vcf02.esx.local", "172.16.3.7"),
+    "172.16.3.8": ("vcf03.esx.local", "172.16.3.8"),
+    "172.16.3.9": ("vcf04.esx.local", "172.16.3.9"),
+}
+
+client_ip = os.environ.get("REMOTE_ADDR", "")
+hostname, ip = hosts.get(client_ip, ("unknown.esx.local", client_ip))
+
+print("Content-Type: text/plain")
+print()
+
+print(f"""vmaccepteula
+install --firstdisk=local --overwritevmfs
+rootpw VMware123!
+network --bootproto=static --device=vmnic0 --ip={ip} --netmask=255.255.255.224 --gateway=172.16.3.1 --nameserver=172.16.3.1 --hostname={hostname} --vlanid=4095
+reboot
+""")
+EOF
+```
+
+### Verification
+
+```bash
+cat /var/www/html/ks/bootstrap.cfg
+```
+
+Expected:
+
+Python script displayed.
+
+---
+
+## Step 4 - Make bootstrap.cfg Executable
+
+### Purpose
+
+Allows Apache CGI execution.
+
+### Command
+
+```bash
+sudo chmod 755 /var/www/html/ks/bootstrap.cfg
+```
+
+### Verification
+
+```bash
+ls -l /var/www/html/ks/bootstrap.cfg
+```
+
+Expected:
+
+```text
+-rwxr-xr-x
+```
+
+---
+
+## Step 5 - Create Apache CGI Configuration
+
+### Purpose
+
+Allows execution of CGI scripts.
+
+### Command
+
+```bash
+sudo tee /etc/apache2/conf-available/ks-cgi.conf > /dev/null <<'EOF'
+<Directory "/var/www/html/ks">
+    Options +ExecCGI
+    Require all granted
+    AddHandler cgi-script .cfg
+</Directory>
+EOF
+```
+
+### Verification
+
+```bash
+cat /etc/apache2/conf-available/ks-cgi.conf
+```
+
+---
+
+## Step 6 - Enable CGI
+
+### Command
+
+```bash
+sudo a2enmod cgid
+```
+
+### Verification
+
+```bash
+apache2ctl -M | grep cgid
+```
+
+Expected:
+
+```text
+cgid_module
+```
+
+---
+
+## Step 7 - Enable CGI Configuration
+
+### Command
+
+```bash
+sudo a2enconf ks-cgi
+```
+
+### Verification
+
+```bash
+ls -l /etc/apache2/conf-enabled/ | grep ks-cgi
+```
+
+---
+
+## Step 8 - Restart Apache
+
+### Command
+
+```bash
+sudo systemctl restart apache2
+```
+
+### Verification
+
+```bash
+sudo systemctl status apache2
+```
+
+Expected:
+
+```text
+active (running)
+```
+
+---
+
+## Step 9 - Test Kickstart Service
+
+### Command
+
+```bash
+curl http://172.16.3.30/ks/bootstrap.cfg
+```
+
+Expected:
+
+```text
+vmaccepteula
+install --firstdisk=local --overwritevmfs
+rootpw VMware123!
+```
+
+Not:
+
+```text
+#!/usr/bin/env python3
+```
+
+---
+
+# PART 2 - ESXi ISO Customization
+
+---
+
+## Step 10 - Create Working Directory
+
+### Command
+
+```bash
+mkdir -p ~/esxi-kickstart
+mkdir -p ~/esxi-kickstart/extracted
+```
+
+### Verification
+
+```bash
+ls ~/esxi-kickstart
+```
+
+---
+
+## Step 11 - Mount ESXi ISO
+
+### Command
+
+```bash
+hdiutil attach ~/Downloads/VMware-VMvisor-Installer-9.0.1.0.24957456.x86_64.iso
+```
+
+### Verification
+
+```bash
+mount | grep ESXI
+```
+
+Expected:
+
+```text
+ESXI-9.0.1.0-24957456-STANDARD
+```
+
+---
+
+## Step 12 - Extract ISO
+
+### Command
+
+```bash
+cp -R /Volumes/ESXI-9.0.1.0-24957456-STANDARD/* ~/esxi-kickstart/extracted/
+```
+
+### Verification
+
+```bash
+ls ~/esxi-kickstart/extracted
+```
+
+---
+
+## Step 13 - Modify BIOS BOOT.CFG
+
+### Purpose
+
+Adds:
+
+* Kickstart URL
+* Unsupported CPU bypass
+
+### Command
+
+```bash
+sed -i '' 's|kernelopt=.*|kernelopt=runweasel allowLegacyCPU=true ks=http://172.16.3.30/ks/bootstrap.cfg|' ~/esxi-kickstart/extracted/BOOT.CFG
+```
+
+### Verification
+
+```bash
+grep kernelopt ~/esxi-kickstart/extracted/BOOT.CFG
+```
+
+Expected:
+
+```text
+kernelopt=runweasel allowLegacyCPU=true ks=http://172.16.3.30/ks/bootstrap.cfg
+```
+
+---
+
+## Step 14 - Modify EFI BOOT.CFG
+
+### Command
+
+```bash
+sed -i '' 's|kernelopt=.*|kernelopt=runweasel allowLegacyCPU=true ks=http://172.16.3.30/ks/bootstrap.cfg|' ~/esxi-kickstart/extracted/EFI/BOOT/BOOT.CFG
+```
+
+### Verification
+
+```bash
+grep kernelopt ~/esxi-kickstart/extracted/EFI/BOOT/BOOT.CFG
+```
+
+Expected:
+
+```text
+kernelopt=runweasel allowLegacyCPU=true ks=http://172.16.3.30/ks/bootstrap.cfg
+```
+
+---
+
+## Step 15 - Install xorriso
+
+### Command
+
+```bash
+brew install xorriso
+```
+
+### Verification
+
+```bash
+xorriso --version
+```
+
+---
+
+## Step 16 - Rebuild ISO
+
+### Command
+
+```bash
+xorriso \
+-indev ~/Downloads/VMware-VMvisor-Installer-9.0.1.0.24957456.x86_64.iso \
+-outdev ~/esxi-kickstart/ESXi-9.0.1-Kickstart.iso \
+-map ~/esxi-kickstart/extracted/BOOT.CFG /BOOT.CFG \
+-map ~/esxi-kickstart/extracted/EFI/BOOT/BOOT.CFG /EFI/BOOT/BOOT.CFG \
+-boot_image any replay
+```
+
+### Verification
+
+```bash
+xorriso -indev ~/esxi-kickstart/ESXi-9.0.1-Kickstart.iso -report_el_torito plain
+```
+
+Expected:
+
+```text
+Boot record  : El Torito
+```
+
+---
+
+## Step 17 - Verify New ISO
+
+### Command
+
+```bash
+hdiutil attach ~/esxi-kickstart/ESXi-9.0.1-Kickstart.iso
+```
+
+### Verification
+
+```bash
+grep kernelopt "/Volumes/ESXI-9.0.1.0-24957456-STANDARD/BOOT.CFG"
+```
+
+Expected:
+
+```text
+kernelopt=runweasel allowLegacyCPU=true ks=http://172.16.3.30/ks/bootstrap.cfg
+```
+
+---
+
+# PART 3 - PowerCLI Configuration
+
+---
+
+## Step 18 - Configure MAC Assignments
+
+### Purpose
+
+Ensures deterministic DHCP assignment.
+
+```powershell
+$NestedHosts = @(
+    @{ VMName = "Nested-ESX01"; Mac1 = "00:50:56:11:22:60"; Mac2 = "00:50:56:11:23:60" },
+    @{ VMName = "Nested-ESX02"; Mac1 = "00:50:56:11:22:61"; Mac2 = "00:50:56:11:23:61" },
+    @{ VMName = "Nested-ESX03"; Mac1 = "00:50:56:11:22:62"; Mac2 = "00:50:56:11:23:62" },
+    @{ VMName = "Nested-ESX04"; Mac1 = "00:50:56:11:22:63"; Mac2 = "00:50:56:11:23:63" }
+)
+```
+
+---
+
+# PART 4 - Deployment Validation
+
+---
+
+## Validation 1 - Watch Apache
+
+### Command
+
+```bash
+sudo tail -f /var/log/apache2/access.log
+```
+
+Expected:
+
+```text
+GET /ks/bootstrap.cfg
+```
+
+---
+
+## Validation 2 - CPU Warning
+
+Expected:
+
+```text
+CPU_SUPPORT WARNING
+```
+
+Not:
+
+```text
+CPU_SUPPORT ERROR
+```
+
+Reason:
+
+allowLegacyCPU=true is functioning.
+
+---
+
+## Validation 3 - Installation
+
+Expected Flow:
+
+1. VM boots
+2. DHCP reservation provides address
+3. ESXi downloads Kickstart
+4. CPU warning appears
+5. Press Enter once
+6. Installation continues
+7. Host reboots
+
+---
+
+## Validation 4 - Host Reachability
+
+Verify:
+
+```bash
+ping 172.16.3.6
+ping 172.16.3.7
+ping 172.16.3.8
+ping 172.16.3.9
+```
+
+Expected:
+
+All hosts respond.
+
+---
+
+# Lessons Learned
+
+1. ESXi 9 requires installer network access before Kickstart download.
+2. DHCP reservations provide deterministic host identity.
+3. CGI-generated Kickstart was more reliable than dynamic %pre scripts.
+4. Both BOOT.CFG and EFI/BOOT/BOOT.CFG must be modified.
+5. allowLegacyCPU=true converts unsupported CPU failures into warnings.
+6. VMware MAC addresses must be unique across all NICs.
+7. CPU warnings are acceptable; CPU errors are not.
