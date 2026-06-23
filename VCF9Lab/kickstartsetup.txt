@@ -145,6 +145,7 @@ Generates a host-specific Kickstart based on the DHCP-assigned source IP.
 ### Command
 
 ```bash
+
 sudo tee /var/www/html/ks/bootstrap.cfg > /dev/null <<'EOF'
 #!/usr/bin/env python3
 import os
@@ -165,10 +166,33 @@ print()
 print(f"""vmaccepteula
 install --firstdisk=local --overwritevmfs
 rootpw VMware123!
+
 network --bootproto=static --device=vmnic0 --ip={ip} --netmask=255.255.255.224 --gateway=172.16.3.1 --nameserver=172.16.3.1 --hostname={hostname} --vlanid=4095
+
 reboot
+
+%firstboot --interpreter=busybox
+
+# Disable IPv6
+esxcli network ip set --ipv6-enabled=false
+
+# Configure DNS
+esxcli network ip dns server add --servers=172.16.3.1
+esxcli network ip dns search add --domain=esx.local
+
+# Configure NTP
+esxcli system ntp set --server=north-america.pool.ntp.org
+esxcli network firewall ruleset set --ruleset-id=ntpClient --enabled=true
+esxcli system ntp set --enabled=true
+
+# Start NTP
+/etc/init.d/ntpd restart
+
+# Persist VLAN 4095 on Management Network
+esxcli network vswitch standard portgroup set --portgroup-name="Management Network" --vlan-id=4095
 """)
 EOF
+
 ```
 
 ### Verification
