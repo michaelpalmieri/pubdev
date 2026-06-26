@@ -61,7 +61,7 @@ VM Configuration
     Additional Disk : 4 x 30 GB Thin
     Network Adapter : 2 x VMXNET3
     Port Group      : ALL-VLAN-PG
-    ISO             : [LocalStorage4ESX02] Hon/VCF/ESXi-9.0.1-Kickstart.iso
+    ISO             : [LocalStorage4ESX02] /VCF/ESXi-9.0.1-Kickstart.iso
 
 .NOTES
 Author      : Michael Palmieri
