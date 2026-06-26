@@ -1,11 +1,100 @@
+```powershell
 <#
 .SYNOPSIS
-    Deploys Nested ESXi VMs with fixed MAC addresses for Kickstart.
-    
-    Disclaimer:
-        This software is provided AS-IS with no warranty expressed or implied.
-        Use at your own risk.
+Deploys nested ESXi virtual machines with fixed MAC addresses for automated Kickstart installation.
+
+.DESCRIPTION
+This script automates the deployment of four nested ESXi virtual machines on a standalone ESXi host using VMware PowerCLI.
+
+The script prompts for the target ESXi host, username, and password, then connects directly to the ESXi host. It creates each nested ESXi VM with predefined compute, storage, network, ISO, and VMX configuration settings required for a VMware Cloud Foundation lab deployment.
+
+For each nested ESXi VM, the script performs the following tasks:
+
+    • Creates the nested ESXi virtual machine.
+    • Configures 6 vCPUs and 32 GB of memory.
+    • Creates a 40 GB thin-provisioned operating system disk.
+    • Removes any default network adapters.
+    • Adds two VMXNET3 network adapters.
+    • Assigns fixed MAC addresses for Kickstart automation.
+    • Connects both network adapters to the ALL-VLAN-PG port group.
+    • Adds four additional 30 GB thin-provisioned disks.
+    • Validates that the VM has five total disks.
+    • Validates that the VM has two network adapters.
+    • Mounts the ESXi Kickstart ISO.
+    • Enables nested virtualization.
+    • Applies required advanced VMX parameters.
+    • Powers on the VM.
+    • Reports success or failure for each VM.
+
+Nested ESXi Virtual Machines Created
+
+    vcf01
+    vcf02
+    vcf03
+    vcf04
+
+Fixed MAC Address Assignments
+
+    vcf01
+        NIC 1: 00:50:56:11:22:60
+        NIC 2: 00:50:56:11:23:60
+
+    vcf02
+        NIC 1: 00:50:56:11:22:61
+        NIC 2: 00:50:56:11:23:61
+
+    vcf03
+        NIC 1: 00:50:56:11:22:62
+        NIC 2: 00:50:56:11:23:62
+
+    vcf04
+        NIC 1: 00:50:56:11:22:63
+        NIC 2: 00:50:56:11:23:63
+
+VM Configuration
+
+    Guest OS Type   : vmkernel8Guest
+    vCPU Count      : 6
+    Cores/Socket    : 6
+    Memory          : 32 GB
+    OS Disk         : 40 GB Thin
+    Additional Disk : 4 x 30 GB Thin
+    Network Adapter : 2 x VMXNET3
+    Port Group      : ALL-VLAN-PG
+    ISO             : [LocalStorage4ESX02] Hon/VCF/ESXi-9.0.1-Kickstart.iso
+
+.NOTES
+Author      : Michael Palmieri
+Version     : 2.0
+Requires    : VMware PowerCLI
+Platform    : VMware ESXi
+Purpose     : VMware Cloud Foundation Nested ESXi Lab Deployment
+
+The script connects directly to a standalone ESXi host and does not require vCenter Server.
+
+The fixed MAC addresses are intended to support automated Kickstart installation logic. Ensure the MAC addresses match the expected values in the Kickstart configuration before running the script.
+
+.DISCLAIMER
+THIS SCRIPT IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.
+
+This script is intended for educational, demonstration, and VMware Cloud Foundation lab environments. It creates and powers on virtual machines, attaches storage, modifies VM hardware, mounts installation media, and applies advanced VMX settings.
+
+You should review and test this script in a non-production environment before use. Confirm datastore names, port group names, ISO paths, MAC addresses, CPU, memory, and disk requirements before running.
+
+The author assumes no responsibility for data loss, service interruption, misconfiguration, failed deployments, licensing issues, or any other damages resulting from the use of this script.
+
+Use this script at your own risk.
+
+.EXAMPLE
+PS> .\Deploy-NestedESXi.ps1
+
+Prompts for the ESXi host and credentials, deploys the nested ESXi VMs, mounts the Kickstart ISO, configures nested virtualization, and powers on each VM.
+
+.LINK
+https://developer.vmware.com/powercli/
 #>
+```
+
 
 $ESXiHost = Read-Host "Enter ESXi Host IP or FQDN"
 $ESXiUser = Read-Host "Enter ESXi Username"
@@ -16,13 +105,13 @@ $ESXiCredential = Get-Credential `
 
 $Datastore = "ESX02LocalNVMeDisk1"
 $PortGroup = "ALL-VLAN-PG"
-$ISOPath   = "[LocalStorage4ESX02]  /VCF/ESXi-9.0.1-Kickstart.iso"
+$ISOPath   = "[LocalStorage4ESX02] Hon/VCF/ESXi-9.0.1-Kickstart.iso"
 
 $NestedHosts = @(
-    @{ VMName = "Nested-ESX01"; Mac1 = "00:50:56:11:22:60"; Mac2 = "00:50:56:11:23:60" },
-    @{ VMName = "Nested-ESX02"; Mac1 = "00:50:56:11:22:61"; Mac2 = "00:50:56:11:23:61" },
-    @{ VMName = "Nested-ESX03"; Mac1 = "00:50:56:11:22:62"; Mac2 = "00:50:56:11:23:62" },
-    @{ VMName = "Nested-ESX04"; Mac1 = "00:50:56:11:22:63"; Mac2 = "00:50:56:11:23:63" }
+    @{ VMName = "vcf01"; Mac1 = "00:50:56:11:22:60"; Mac2 = "00:50:56:11:23:60" },
+    @{ VMName = "vcf02"; Mac1 = "00:50:56:11:22:61"; Mac2 = "00:50:56:11:23:61" },
+    @{ VMName = "vcf03"; Mac1 = "00:50:56:11:22:62"; Mac2 = "00:50:56:11:23:62" },
+    @{ VMName = "vcf04"; Mac1 = "00:50:56:11:22:63"; Mac2 = "00:50:56:11:23:63" }
 )
 
 function Write-Step {
