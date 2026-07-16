@@ -52,7 +52,7 @@ Use the following command to review recent entries:
 
 .NOTES
 Created By: Michael Palmieri
-Version: 2.2
+Version: 2.3
 Last Updated: July 16, 2026
 
 This script is intended for Microsoft Entra joined and Intune-managed Windows
@@ -95,13 +95,13 @@ $Printers = @(
         Name       = "Xerox 7830"
         IPAddress  = "192.168.1.202"
         PortName   = "IP_192.168.1.202"
-        DriverName = "Xerox Global Print Driver PCL 6"
+        DriverName = "Xerox Global Print Drive PCL 6"
     },
     @{
         Name       = "Xerox 7835"
         IPAddress  = "192.168.1.28"
         PortName   = "IP_192.168.1.28"
-        DriverName = "Xerox Global Print Driver PCL 6"
+        DriverName = "Xerox Global Print Drive PCL 6"
     }
 )
 
@@ -191,7 +191,7 @@ function Get-RequiredPrinterDriver {
 # -----------------------------------------------------------------------------
 
 Write-Log -Message "Starting direct-IP printer deployment."
-Write-Log -Message "Script version: 2.2"
+Write-Log -Message "Script version: 2.3"
 Write-Log -Message "Running as: $([Security.Principal.WindowsIdentity]::GetCurrent().Name)"
 Write-Log -Message "Computer name: $env:COMPUTERNAME"
 Write-Log -Message "64-bit PowerShell process: $([Environment]::Is64BitProcess)"
@@ -207,6 +207,11 @@ try {
         -ErrorAction Stop
 
     Write-Log -Message "The PrintManagement module loaded successfully."
+
+    Write-Log -Message "Available printer drivers:"
+    Get-PrinterDriver | ForEach-Object {
+        Write-Log -Message $_.Name
+    }
 }
 catch {
     Write-Log `
