@@ -95,13 +95,13 @@ $Printers = @(
         Name       = "Xerox 7830"
         IPAddress  = "192.168.1.202"
         PortName   = "IP_192.168.1.202"
-        DriverName = "Xerox Global Print Driver PCL 6"
+        DriverName = "Xerox Global Print Driver PCL6"
     },
     @{
         Name       = "Xerox 7835"
         IPAddress  = "192.168.1.28"
         PortName   = "IP_192.168.1.28"
-        DriverName = "Xerox Global Print Driver PCL 6"
+        DriverName = "Xerox Global Print Driver PCL6"
     }
 )
 
