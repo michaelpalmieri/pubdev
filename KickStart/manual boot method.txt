@@ -1,0 +1,359 @@
+.DISCLAIMER
+THIS SCRIPT IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.
+
+This script is intended for educational, demonstration, and VMware Cloud Foundation lab environments. It creates and powers on virtual machines, attaches storage, modifies VM hardware, mounts installation media, and applies advanced VMX settings.
+
+You should review and test this script in a non-production environment before use. Confirm datastore names, port group names, ISO paths, MAC addresses, CPU, memory, and disk requirements before running.
+
+The author assumes no responsibility for data loss, service interruption, misconfiguration, failed deployments, licensing issues, or any other damages resulting from the use of this script.
+
+Use this script at your own risk.
+
+Overview 
+You'll need:
+
+1 Linux or Windows web server to host the Kickstart files
+1 standard VMware ESXi 8.x ISO
+1 Kickstart file per ESXi host
+Network connectivity between the ESXi installer and your web server
+
+The process is:
+
+Create Kickstart files
+        │
+        ▼
+Host them on a web server
+        │
+        ▼
+Boot ESXi ISO
+        │
+        ▼
+Press Shift+O
+        │
+        ▼
+Specify ks=<URL>
+        │
+        ▼
+ESXi downloads Kickstart
+        │
+        ▼
+Installs automatically
+        │
+        ▼
+Host reboots
+Step 1 - Build a Kickstart Server
+
+I'll use Ubuntu because it's simple.
+
+Install Apache:
+
+sudo apt update
+sudo apt install apache2
+
+Verify it's running:
+
+sudo systemctl status apache2
+
+You should see:
+
+active (running)
+Step 2 - Create a Kickstart Directory
+sudo mkdir -p /var/www/html/kickstart
+
+Directory structure:
+
+/var/www/html/
+
+    kickstart/
+
+        esx01.cfg
+        esx02.cfg
+        esx03.cfg
+Step 3 - Create Your First Kickstart File
+
+Example:
+
+sudo nano /var/www/html/kickstart/esx01.cfg
+
+Example file:
+
+vmaccepteula
+
+rootpw VMware123!
+
+install --firstdisk=local --overwritevmfs
+
+network \
+    --bootproto=static \
+    --device=vmnic0 \
+    --ip=192.168.10.21 \
+    --netmask=255.255.255.0 \
+    --gateway=192.168.10.1 \
+    --hostname=esx01.lab.local \
+    --nameserver=192.168.10.5
+
+reboot
+
+%firstboot --interpreter=busybox
+
+esxcli system hostname set \
+    --host esx01 \
+    --domain lab.local
+
+esxcli system ntp set \
+    --server=192.168.10.5
+
+esxcli system ntp set \
+    --enabled=true
+
+/etc/init.d/ntpd restart
+
+vim-cmd hostsvc/enable_ssh
+vim-cmd hostsvc/start_ssh
+Step 4 - Test the Kickstart File
+
+From another computer:
+
+http://192.168.10.5/kickstart/esx01.cfg
+
+You should see the file contents.
+
+If you cannot view it in a browser, ESXi won't be able to download it.
+
+Step 5 - Allow HTTP Through the Firewall
+
+Ubuntu:
+
+sudo ufw allow 80/tcp
+
+Verify:
+
+sudo ufw status
+Step 6 - Verify Network Connectivity
+
+The ESXi installer must be able to reach:
+
+192.168.10.5
+
+Test from another computer:
+
+ping 192.168.10.5
+Step 7 - Mount the ESXi ISO
+
+Using:
+
+Dell iDRAC
+HP iLO
+Lenovo XCC
+USB flash drive
+DVD
+
+Use the standard VMware ESXi 8.x ISO. No customization is required.
+
+Step 8 - Boot the Server
+
+You'll see:
+
+Loading VMware ESXi Installer
+
+Shortly after, you'll reach the ESXi boot screen.
+
+Step 9 - Press Shift+O
+
+At the boot screen, press:
+
+Shift + O
+
+The default boot option is:
+
+runweasel
+Step 10 - Append Your Boot Options
+
+Modify it to:
+
+runweasel cpuUniformityHardCheckPanic=FALSE ks=http://192.168.10.5/kickstart/esx01.cfg
+
+Then press Enter.
+
+Step 11 - The Installer Starts
+
+The installer will:
+
+Load kernel
+
+↓
+
+Configure temporary network using DHCP
+
+↓
+
+Download esx01.cfg
+
+↓
+
+Begin unattended install
+
+No prompts should appear if the Kickstart file is complete.
+
+Important: The installer uses DHCP initially to download the Kickstart file. Your static IP settings in the Kickstart file are applied later during installation. If the deployment network doesn't have DHCP, you'll need to supply network parameters in the boot options or use a different approach.
+
+Step 12 - Installation
+
+The installer will:
+
+Partition disk
+
+↓
+
+Install ESXi
+
+↓
+
+Configure management network
+
+↓
+
+Run %firstboot
+
+↓
+
+Reboot
+Step 13 - Remove the ISO
+
+After the reboot:
+
+Disconnect
+
+Virtual Media
+
+or
+
+USB Drive
+
+Otherwise it may boot back into the installer.
+
+Step 14 - Verify the Host
+
+Open the DCUI.
+
+Check:
+
+✓ Hostname
+
+✓ IP Address
+
+✓ Gateway
+
+✓ DNS
+
+✓ NTP
+
+✓ SSH
+
+Step 15 - Repeat for Host 2
+
+Copy:
+
+esx01.cfg
+
+to
+
+esx02.cfg
+
+Change:
+
+Hostname
+
+IP
+
+Gateway (if needed)
+
+DNS (if needed)
+
+Boot Host 2.
+
+Press:
+
+Shift+O
+
+Use:
+
+runweasel cpuUniformityHardCheckPanic=FALSE ks=http://192.168.10.5/kickstart/esx02.cfg
+
+Done.
+
+Step 16 - Repeat for Additional Hosts
+
+Your Kickstart directory might look like:
+
+kickstart/
+
+esx01.cfg
+esx02.cfg
+esx03.cfg
+esx04.cfg
+esx05.cfg
+...
+esx25.cfg
+Optional: Use DNS Instead of IP
+
+Instead of:
+
+ks=http://192.168.10.5/kickstart/esx01.cfg
+
+Use:
+
+ks=http://kickstart.lab.local/kickstart/esx01.cfg
+
+This avoids updating URLs if the web server's IP changes.
+
+Suggested Directory Layout
+/var/www/html/
+
+kickstart/
+│
+├── esx01.cfg
+├── esx02.cfg
+├── esx03.cfg
+├── esx04.cfg
+├── esx05.cfg
+│
+└── templates/
+    └── base.cfg
+
+Keep a base.cfg template with common settings (NTP, SSH, etc.) and copy it when creating new host-specific files.
+
+End-to-End Workflow
+Create esx01.cfg
+        │
+        ▼
+Place in /var/www/html/kickstart/
+        │
+        ▼
+Verify:
+http://192.168.10.5/kickstart/esx01.cfg
+        │
+        ▼
+Boot ESXi ISO
+        │
+        ▼
+Press Shift+O
+        │
+        ▼
+runweasel cpuUniformityHardCheckPanic=FALSE \
+ks=http://192.168.10.5/kickstart/esx01.cfg
+        │
+        ▼
+ESXi downloads Kickstart
+        │
+        ▼
+Automatic installation
+        │
+        ▼
+Reboot
+        │
+        ▼
+ESXi ready
+Scaling this process
+
+If you're deploying 20, 50, or even 100 hosts, the next improvement I'd recommend is storing the host information (hostname, IP, VLAN, DNS, gateway, etc.) in a CSV file and generating all of the esxNN.cfg files with a small PowerShell or Python script. That way you maintain a single source of truth and can regenerate all Kickstart files whenever your inventory changes.

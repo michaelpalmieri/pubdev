@@ -1,0 +1,340 @@
+.DISCLAIMER
+THIS SCRIPT IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.
+
+This script is intended for educational, demonstration, and VMware Cloud Foundation lab environments. It creates and powers on virtual machines, attaches storage, modifies VM hardware, mounts installation media, and applies advanced VMX settings.
+
+You should review and test this script in a non-production environment before use. Confirm datastore names, port group names, ISO paths, MAC addresses, CPU, memory, and disk requirements before running.
+
+The author assumes no responsibility for data loss, service interruption, misconfiguration, failed deployments, licensing issues, or any other damages resulting from the use of this script.
+
+Use this script at your own risk.
+
+
+Architecture
+                    +------------------------+
+                    | DHCP Server            |
+                    | Option 66/67           |
+                    +-----------+------------+
+                                |
+                                |
+                                |
+                +---------------+---------------+
+                |                               |
+        +-------+-------+               +-------+-------+
+        | PXE/TFTP      |               | HTTP Server   |
+        | Boot Loader   |               | ESXi Files    |
+        +-------+-------+               +-------+-------+
+                |                               |
+                +---------------+---------------+
+                                |
+                        Physical ESXi Host
+                                |
+                                |
+                        PXE Network Boot
+                                |
+                                |
+                  Downloads ESXi Installer
+                                |
+                                |
+                  Downloads Kickstart File
+                                |
+                                |
+                     Installs Automatically
+Requirements
+
+One Linux server
+
+Ubuntu 22.04
+
+Example
+
+IP
+192.168.10.10
+
+Install
+
+Apache
+TFTP
+DHCP (optional if you already have DHCP)
+Step 1 Install Packages
+sudo apt update
+
+sudo apt install apache2 \
+tftpd-hpa \
+isc-dhcp-server \
+syslinux-common \
+pxelinux
+Step 2 Create Directories
+sudo mkdir -p /srv/tftp
+sudo mkdir -p /srv/tftp/pxelinux.cfg
+sudo mkdir -p /var/www/html/esxi
+sudo mkdir -p /var/www/html/kickstart
+Step 3 Download ESXi
+
+Download
+
+VMware ESXi 8 ISO
+
+Mount
+
+sudo mkdir /mnt/esxi
+
+sudo mount -o loop VMware*.iso /mnt/esxi
+
+Copy
+
+sudo cp -r /mnt/esxi/* \
+/var/www/html/esxi/
+
+Now Apache serves
+
+http://192.168.10.10/esxi/
+Step 4 Configure Apache
+
+Restart
+
+sudo systemctl restart apache2
+
+Test
+
+http://192.168.10.10/esxi/boot.cfg
+
+You should see boot.cfg.
+
+Step 5 Configure TFTP
+
+Edit
+
+/etc/default/tftpd-hpa
+
+Example
+
+TFTP_DIRECTORY="/srv/tftp"
+TFTP_ADDRESS=":69"
+TFTP_OPTIONS="--secure"
+
+Restart
+
+sudo systemctl restart tftpd-hpa
+Step 6 Copy EFI Boot Files
+
+Copy
+
+EFI/
+
+from the ESXi ISO
+
+to
+
+/srv/tftp
+
+Result
+
+/srv/tftp/
+
+EFI/
+    BOOT/
+        BOOTX64.EFI
+Step 7 Configure DHCP
+
+If using Windows DHCP
+
+Configure
+
+Option 66
+
+192.168.10.10
+
+Option 67
+
+UEFI
+
+EFI/BOOT/BOOTX64.EFI
+Step 8 Configure PXE Menu
+
+Create
+
+/srv/tftp/pxelinux.cfg/default
+
+Example
+
+DEFAULT ESXI
+
+LABEL ESXI
+
+KERNEL mboot.c32
+
+APPEND -c http://192.168.10.10/esxi/boot.cfg
+
+For UEFI, you may instead boot directly with BOOTX64.EFI and provide the appropriate boot.cfg location, depending on your PXE stack (plain TFTP, iPXE, etc.).
+
+Step 9 Modify boot.cfg
+
+Find
+
+kernelopt=
+
+Original
+
+kernelopt=runweasel
+
+Change
+
+kernelopt=runweasel \
+cpuUniformityHardCheckPanic=FALSE \
+ks=http://192.168.10.10/kickstart/esx01.cfg
+Step 10 Create Kickstart
+/var/www/html/kickstart/esx01.cfg
+
+Example
+
+vmaccepteula
+
+rootpw VMware123!
+
+install --firstdisk=local --overwritevmfs
+
+network \
+--bootproto=static \
+--device=vmnic0 \
+--ip=192.168.10.21 \
+--netmask=255.255.255.0 \
+--gateway=192.168.10.1 \
+--hostname=esx01.lab.local \
+--nameserver=192.168.10.5
+
+reboot
+
+%firstboot --interpreter=busybox
+
+esxcli system hostname set \
+--host esx01 \
+--domain lab.local
+Step 11 Test
+
+Open
+
+http://192.168.10.10/kickstart/esx01.cfg
+
+You should see the file.
+
+Step 12 Configure BIOS
+
+Set
+
+UEFI
+
+↓
+
+Network Boot First
+Step 13 Boot Server
+
+Power on.
+
+Sequence
+
+DHCP
+
+↓
+
+TFTP
+
+↓
+
+BOOTX64.EFI
+
+↓
+
+boot.cfg
+
+↓
+
+ESXi Installer
+
+↓
+
+Kickstart
+
+↓
+
+Install
+
+No keyboard required.
+
+Step 14 Server Reboots
+
+Remove PXE priority or let the local disk boot first after installation.
+
+Host comes up
+
+esx01
+
+192.168.10.21
+
+Ready
+Deploying Multiple Servers
+
+This is where PXE shines.
+
+Instead of modifying boot.cfg for each host, use a different PXE configuration per MAC address.
+
+Example
+
+3C:EC:EF:AA:01:11
+
+↓
+
+boot-esx01.cfg
+
+↓
+
+ks=http://192.168.10.10/kickstart/esx01.cfg
+
+Another server
+
+3C:EC:EF:AA:01:12
+
+↓
+
+boot-esx02.cfg
+
+↓
+
+ks=http://192.168.10.10/kickstart/esx02.cfg
+
+Each host receives its own boot configuration automatically based on its MAC address.
+
+Scaling to 100+ Hosts
+
+Rather than creating many boot.cfg files, a common enterprise pattern is:
+
+One boot.cfg
+
+↓
+
+One ks.cfg
+
+↓
+
+%pre script
+
+↓
+
+Reads MAC Address
+
+↓
+
+Downloads correct host configuration
+
+↓
+
+Installs
+
+This means:
+
+One ESXi installer
+One PXE menu
+One Kickstart entry point
+Unlimited hosts
+
+The %pre script determines which host is booting and fetches the appropriate configuration dynamically. This is the approach used in many large VMware environments because adding a new server only requires updating an inventory (CSV, database, or web service), not creating new boot menus.

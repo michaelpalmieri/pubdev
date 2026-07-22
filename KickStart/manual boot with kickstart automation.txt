@@ -1,0 +1,212 @@
+.DISCLAIMER
+THIS SCRIPT IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.
+
+This script is intended for educational, demonstration, and VMware Cloud Foundation lab environments. It creates and powers on virtual machines, attaches storage, modifies VM hardware, mounts installation media, and applies advanced VMX settings.
+
+You should review and test this script in a non-production environment before use. Confirm datastore names, port group names, ISO paths, MAC addresses, CPU, memory, and disk requirements before running.
+
+The author assumes no responsibility for data loss, service interruption, misconfiguration, failed deployments, licensing issues, or any other damages resulting from the use of this script.
+
+Use this script at your own risk.
+
+Maintain one CSV with all host information.
+Maintain one Kickstart template.
+Run a script that generates esx01.cfg, esx02.cfg, etc.
+
+If you ever change your DNS server, NTP server, VLAN, or gateway, you update the CSV (or template) and regenerate everything in seconds.
+
+Directory Structure
+Deployment/
+
+│
+├── Generate-Kickstart.ps1
+├── Hosts.csv
+├── Template.cfg
+│
+└── Output/
+      esx01.cfg
+      esx02.cfg
+      esx03.cfg
+      ...
+Step 1 Create the CSV
+
+Example:
+
+Hostname,IPAddress,SubnetMask,Gateway,DNS,VLAN,NTP,RootPassword
+esx01,192.168.10.21,255.255.255.0,192.168.10.1,192.168.10.5,120,192.168.10.5,VMware123!
+esx02,192.168.10.22,255.255.255.0,192.168.10.1,192.168.10.5,120,192.168.10.5,VMware123!
+esx03,192.168.10.23,255.255.255.0,192.168.10.1,192.168.10.5,120,192.168.10.5,VMware123!
+esx04,192.168.10.24,255.255.255.0,192.168.10.1,192.168.10.5,120,192.168.10.5,VMware123!
+
+Notice the only things changing are:
+
+Hostname
+IP Address
+
+Everything else stays the same.
+
+Step 2 Create the Template
+
+Template.cfg
+
+vmaccepteula
+
+rootpw {{RootPassword}}
+
+install --firstdisk=local --overwritevmfs
+
+network \
+--bootproto=static \
+--device=vmnic0 \
+--ip={{IPAddress}} \
+--netmask={{SubnetMask}} \
+--gateway={{Gateway}} \
+--hostname={{Hostname}}.lab.local \
+--nameserver={{DNS}} \
+--vlanid={{VLAN}}
+
+reboot
+
+%firstboot --interpreter=busybox
+
+esxcli system hostname set \
+--host {{Hostname}} \
+--domain lab.local
+
+esxcli system ntp set \
+--server={{NTP}}
+
+esxcli system ntp set \
+--enabled=true
+
+/etc/init.d/ntpd restart
+
+vim-cmd hostsvc/enable_ssh
+vim-cmd hostsvc/start_ssh
+
+Everything inside {{ }} is replaced by the script.
+
+Step 3 PowerShell Generator
+
+Save as Generate-Kickstart.ps1
+
+$Template = Get-Content ".\Template.cfg" -Raw
+
+$Hosts = Import-Csv ".\Hosts.csv"
+
+foreach ($Host in $Hosts)
+{
+    $Config = $Template
+
+    $Host.PSObject.Properties | ForEach-Object {
+        $Config = $Config.Replace("{{{0}}}" -f $_.Name, $_.Value)
+    }
+
+    $OutputFile = ".\Output\$($Host.Hostname).cfg"
+
+    $Config | Out-File $OutputFile -Encoding ASCII
+}
+
+Run
+
+.\Generate-Kickstart.ps1
+Output
+
+Automatically creates
+
+Output/
+
+esx01.cfg
+esx02.cfg
+esx03.cfg
+esx04.cfg
+
+Each file already has its own
+
+IP
+hostname
+gateway
+DNS
+VLAN
+NTP
+Example Generated File
+
+esx02.cfg
+
+vmaccepteula
+
+rootpw VMware123!
+
+install --firstdisk=local --overwritevmfs
+
+network \
+--bootproto=static \
+--device=vmnic0 \
+--ip=192.168.10.22 \
+--netmask=255.255.255.0 \
+--gateway=192.168.10.1 \
+--hostname=esx02.lab.local \
+--nameserver=192.168.10.5 \
+--vlanid=120
+
+reboot
+
+%firstboot --interpreter=busybox
+
+esxcli system hostname set \
+--host esx02 \
+--domain lab.local
+
+esxcli system ntp set \
+--server=192.168.10.5
+
+esxcli system ntp set \
+--enabled=true
+
+/etc/init.d/ntpd restart
+
+vim-cmd hostsvc/enable_ssh
+vim-cmd hostsvc/start_ssh
+Step 4 Copy to Apache
+
+Once generated:
+
+Linux
+
+cp Output/*.cfg /var/www/html/kickstart/
+
+Windows IIS
+
+C:\inetpub\wwwroot\kickstart\
+Installing Hosts
+
+Now you simply boot each server and enter the corresponding URL:
+
+esx01
+
+runweasel cpuUniformityHardCheckPanic=FALSE ks=http://192.168.10.5/kickstart/esx01.cfg
+
+esx02
+
+runweasel cpuUniformityHardCheckPanic=FALSE ks=http://192.168.10.5/kickstart/esx02.cfg
+
+esx03
+
+runweasel cpuUniformityHardCheckPanic=FALSE ks=http://192.168.10.5/kickstart/esx03.cfg
+Scaling to Hundreds of Hosts
+
+As your environment grows, you can expand the CSV to include nearly every per-host setting you care about. For example:
+
+Hostname,IPAddress,SubnetMask,Gateway,DNS,VLAN,NTP,RootPassword,InstallDisk,Domain,VMotionIP,VSANIP,LicenseKey
+esx01,192.168.10.21,255.255.255.0,192.168.10.1,192.168.10.5,120,192.168.10.5,VMware123!,naa.600...,lab.local,192.168.20.21,192.168.30.21,XXXXX-XXXXX-XXXXX-XXXXX-XXXXX
+
+Your PowerShell script can then replace additional placeholders such as {{InstallDisk}}, {{Domain}}, or {{LicenseKey}} in the template. This gives you a single source of truth: update the CSV, regenerate the Kickstart files, and every host configuration stays consistent.
+
+A couple of production improvements
+
+For a production deployment, I'd make two changes to the example above:
+
+Don't store the root password in plain text. Generate an encrypted password hash with openssl passwd -6 (or another supported method) and use rootpw --iscrypted in the template.
+Add validation to the PowerShell script. Before generating files, verify that there are no duplicate hostnames or IP addresses and that all required fields are populated. Catching those mistakes before deployment saves a lot of troubleshooting later.
+
+This CSV + template approach is straightforward to maintain and scales well from a handful of hosts to hundreds without having to hand-edit individual Kickstart files.
