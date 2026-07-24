@@ -1,0 +1,74 @@
+VCF 5.2 Post-Deployment Verification Checklist
+1. Verify SDDC Manager
+n Bring-up completed successfully
+n No failed workflows or critical alarms
+n Management domain shows Active
+n All 4 ESXi hosts are present
+n vCenter and NSX are registered
+2. Verify vCenter
+n Log into vCenter successfully
+n All 4 hosts show Connected
+n Cluster health is green
+n No critical alarms
+n DRS is enabled
+n HA is enabled
+3. Verify ESXi Hosts
+n All hosts running the same ESXi build
+n Management vmk is reachable
+n DNS resolves correctly
+n NTP is synchronized
+n No hardware alarms
+n Licensing is applied
+4. Verify vSAN
+n vSAN datastore is mounted
+n All disk groups healthy
+n No absent or degraded disks
+n Skyline Health shows green
+n Storage policy compliance is healthy
+5. Verify NSX
+n NSX Manager accessible
+n All hosts prepared
+n Transport Nodes healthy
+n Transport Zone healthy
+n TEP interfaces up
+n No critical NSX alarms
+6. Verify Networking
+n DNS forward and reverse lookups work
+n NTP reachable
+n Default gateways reachable
+n VLANs configured correctly
+n MTU consistent across hosts
+n vMotion network operational
+7. Verify Cluster Functions
+n vMotion test successful
+n HA configuration completed
+n DRS functioning normally
+n Enter and exit Maintenance Mode successfully
+8. Verify Lifecycle Manager
+n No pending critical updates
+n Image compliance is green
+n Firmware and drivers match the VCF BOM
+9. Verify Certificates & Licensing
+n Certificates valid
+n No certificate warnings
+n vCenter licensed
+n ESXi licensed
+n NSX licensed
+10. Verify Backups & Logging
+n vCenter backup configured
+n SDDC Manager backup configured
+n Syslog configured (if required)
+n Core dump configured
+n Support bundle location documented
+11. Perform Basic Functional Tests
+n Deploy a test VM
+n Power on/off test VM
+n Verify VM networking
+n Perform a vMotion
+n Verify storage accessibility
+n Delete test VM
+12. Final Review
+n No critical alarms in SDDC Manager
+n No critical alarms in vCenter
+n Skyline Health is green
+n Document build numbers, versions, IPs, hostnames, and licenses
