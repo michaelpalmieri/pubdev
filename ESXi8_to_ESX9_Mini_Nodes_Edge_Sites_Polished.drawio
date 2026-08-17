@@ -1,0 +1,148 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="polished" name="ESXi8 to ESX9 Edge Sites">
+    <mxGraphModel dx="1746" dy="1129" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="t" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=none;fillColor=none;fontSize=28;fontStyle=1;fontColor=#102A56;align=center;" value="ESXi8 to ESX9 Upgrade- Mini Nodes at Edge Sites" vertex="1">
+          <mxGeometry height="45" width="1050" x="300" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="st" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=none;fillColor=none;fontSize=18;fontStyle=1;fontColor=#404854;align=center;" value="Managed by vCenter at the Data Center with VCF Operations 9 for Licensing" vertex="1">
+          <mxGeometry height="35" width="950" x="350" y="68" as="geometry" />
+        </mxCell>
+        <mxCell id="bc" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#5B9B58;fillColor=#F6FBF4;fontSize=14;strokeWidth=1.5;" value="BROADCOM CLOUD  ☁ Broadcom Business Services Console (Subscription / Entitlement)" vertex="1">
+          <mxGeometry height="195" width="260" x="70" y="125" as="geometry" />
+        </mxCell>
+        <mxCell id="ops" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#5B9B58;fillColor=#F6FBF4;fontSize=14;strokeWidth=1.5;" value="VCF OPERATIONS 9 (Management VM at Data Center)  ◉ • License Management • Subscription Sync • Monitoring / Alerts • Inventory / Health" vertex="1">
+          <mxGeometry height="235" width="280" x="470" y="125" as="geometry" />
+        </mxCell>
+        <mxCell id="vc" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#4A7CC7;fillColor=#F5F9FF;fontSize=14;strokeWidth=1.5;" value="VCENTER SERVER 9 (Data Center)  ▣ • Central Management • Inventory • Lifecycle Management • Host &amp; VM Management • Licensing Enforcement" vertex="1">
+          <mxGeometry height="235" width="280" x="850" y="125" as="geometry" />
+        </mxCell>
+        <mxCell id="dc" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#4A7CC7;fillColor=#F5F9FF;fontSize=14;strokeWidth=1.5;" value="DATA CENTER  Core Infrastructure DNS     NTP     AD / LDAP     Syslog  Datastores for DC VMs SAN / NAS  Data Center Network Management VLAN(s)" vertex="1">
+          <mxGeometry height="280" width="300" x="1210" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="bcops" edge="1" parent="1" source="bc" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;startArrow=block;endFill=1;startFill=1;dashed=1;strokeWidth=2;" target="ops" value="Internet (TLS 443)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="opsvc" edge="1" parent="1" source="ops" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;startArrow=block;endFill=1;startFill=1;strokeWidth=2;" target="vc" value="Manages &amp; Licenses">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="vcdc" edge="1" parent="1" source="vc" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="dc" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wan" parent="1" style="shape=cloud;whiteSpace=wrap;html=1;strokeColor=#5C2D91;fillColor=#FFFFFF;fontSize=14;fontStyle=1;strokeWidth=1.5;" value="WAN / Internet (Site-to-Site VPN / MPLS)" vertex="1">
+          <mxGeometry height="85" width="240" x="680" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="vcwan" edge="1" parent="1" source="vc" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="wan" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="flowh" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#1E5AA8;fillColor=#1E5AA8;fontColor=#FFFFFF;fontStyle=1;fontSize=13;" value="UPGRADE FLOW (Per Host)" vertex="1">
+          <mxGeometry height="30" width="280" x="20" y="395" as="geometry" />
+        </mxCell>
+        <mxCell id="flow" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#4A7CC7;fillColor=#F5F9FF;fontSize=14;strokeWidth=1.5;align=left;" value="1  Verify hardware/firmware compatibility with ESX 9&lt;div&gt;&amp;nbsp;2  Verify subscription entitlement (VVF/VCF 9)&amp;nbsp;&lt;/div&gt;&lt;div&gt;&amp;nbsp;3  Ensure VCF Operations 9 is registered with Broadcom  4&amp;nbsp;&lt;/div&gt;&lt;div&gt;&amp;nbsp;Upgrade/Verify vCenter Server 9&amp;nbsp;&lt;/div&gt;&lt;div&gt;&amp;nbsp;5&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;Add edge hosts to vCenter 9&amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;6  Verify licenses in vCenter via VCF Operations&amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;7  Backup host configuration &amp;amp; VMs&amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;8  Put host in Maintenance Mode&amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;9  Perform in-place upgrade: ESXi 8 → ESX 9&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;10 Verify host, networking, storage&amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;11 Start VMs and validate workloads&amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;1&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;2 Repeat for next edge site&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="390" width="290" x="20" y="425" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#7A55B5;fillColor=#F8F3FD;fontColor=#3F246C;fontStyle=1;fontSize=13;" value="EDGE SITE 1" vertex="1">
+          <mxGeometry height="30" width="300" x="390" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="s1box" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#7A55B5;fillColor=#FBF8FF;fontSize=13;strokeWidth=1.5;" value="Single Physical Server" vertex="1">
+          <mxGeometry height="215" width="260" x="410" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="s1old" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#E4A13A;fillColor=#FFF9EF;fontSize=12;strokeWidth=1.2;" value="ESXi 8" vertex="1">
+          <mxGeometry height="34" width="75" x="435" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="s1new" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#5B9B58;fillColor=#F6FBF4;fontSize=14;strokeWidth=1.5;" value="ESX 9" vertex="1">
+          <mxGeometry height="34" width="75" x="570" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="s1up" edge="1" parent="1" source="s1old" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="s1new" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s1storage" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#A7A7A7;fillColor=#FFFFFF;fontSize=12;strokeWidth=1;" value="Local Storage (RAID)" vertex="1">
+          <mxGeometry height="48" width="210" x="435" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="s1vms" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#4A7CC7;fillColor=#F5F9FF;fontSize=14;strokeWidth=1.5;" value="Workload VMs VM 01     VM 02     VM 03     …     VM n" vertex="1">
+          <mxGeometry height="48" width="210" x="435" y="700" as="geometry" />
+        </mxCell>
+        <mxCell id="s1note" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#8B69BD;fillColor=#FCFAFF;fontSize=11;align=left;verticalAlign=top;spacing=8;" value="Edge Site Characteristics • One physical server (single ESXi host) • Local storage for workloads • Connected to Data Center over WAN • No local vCenter required" vertex="1">
+          <mxGeometry height="105" width="260" x="410" y="780" as="geometry" />
+        </mxCell>
+        <mxCell id="wans1" edge="1" parent="1" source="wan" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=none;strokeWidth=2;" target="s1" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#7A55B5;fillColor=#F8F3FD;fontColor=#3F246C;fontStyle=1;fontSize=13;" value="EDGE SITE 2" vertex="1">
+          <mxGeometry height="30" width="300" x="760" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="s2box" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#7A55B5;fillColor=#FBF8FF;fontSize=13;strokeWidth=1.5;" value="Single Physical Server" vertex="1">
+          <mxGeometry height="215" width="260" x="780" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="s2old" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#E4A13A;fillColor=#FFF9EF;fontSize=12;strokeWidth=1.2;" value="ESXi 8" vertex="1">
+          <mxGeometry height="34" width="75" x="805" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="s2new" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#5B9B58;fillColor=#F6FBF4;fontSize=14;strokeWidth=1.5;" value="ESX 9" vertex="1">
+          <mxGeometry height="34" width="75" x="940" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="s2up" edge="1" parent="1" source="s2old" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="s2new" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s2storage" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#A7A7A7;fillColor=#FFFFFF;fontSize=12;strokeWidth=1;" value="Local Storage (RAID)" vertex="1">
+          <mxGeometry height="48" width="210" x="805" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="s2vms" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#4A7CC7;fillColor=#F5F9FF;fontSize=14;strokeWidth=1.5;" value="Workload VMs VM 01     VM 02     VM 03     …     VM n" vertex="1">
+          <mxGeometry height="48" width="210" x="805" y="700" as="geometry" />
+        </mxCell>
+        <mxCell id="s2note" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#8B69BD;fillColor=#FCFAFF;fontSize=11;align=left;verticalAlign=top;spacing=8;" value="Edge Site Characteristics • One physical server (single ESXi host) • Local storage for workloads • Connected to Data Center over WAN • No local vCenter required" vertex="1">
+          <mxGeometry height="105" width="260" x="780" y="780" as="geometry" />
+        </mxCell>
+        <mxCell id="wans2" edge="1" parent="1" source="wan" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=none;strokeWidth=2;" target="s2" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#7A55B5;fillColor=#F8F3FD;fontColor=#3F246C;fontStyle=1;fontSize=13;" value="EDGE SITE N" vertex="1">
+          <mxGeometry height="30" width="300" x="1180" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="s3box" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#7A55B5;fillColor=#FBF8FF;fontSize=13;strokeWidth=1.5;" value="Single Physical Server" vertex="1">
+          <mxGeometry height="215" width="260" x="1200" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="s3old" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#E4A13A;fillColor=#FFF9EF;fontSize=12;strokeWidth=1.2;" value="ESXi 8" vertex="1">
+          <mxGeometry height="34" width="75" x="1225" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="s3new" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#5B9B58;fillColor=#F6FBF4;fontSize=14;strokeWidth=1.5;" value="ESX 9" vertex="1">
+          <mxGeometry height="34" width="75" x="1360" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="s3up" edge="1" parent="1" source="s3old" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="s3new" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s3storage" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#A7A7A7;fillColor=#FFFFFF;fontSize=12;strokeWidth=1;" value="Local Storage (RAID)" vertex="1">
+          <mxGeometry height="48" width="210" x="1225" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="s3vms" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#4A7CC7;fillColor=#F5F9FF;fontSize=14;strokeWidth=1.5;" value="Workload VMs VM 01     VM 02     VM 03     …     VM n" vertex="1">
+          <mxGeometry height="48" width="210" x="1225" y="700" as="geometry" />
+        </mxCell>
+        <mxCell id="s3note" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#8B69BD;fillColor=#FCFAFF;fontSize=11;align=left;verticalAlign=top;spacing=8;" value="Edge Site Characteristics • One physical server (single ESXi host) • Local storage for workloads • Connected to Data Center over WAN • No local vCenter required" vertex="1">
+          <mxGeometry height="105" width="260" x="1200" y="780" as="geometry" />
+        </mxCell>
+        <mxCell id="wans3" edge="1" parent="1" source="wan" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=none;strokeWidth=2;" target="s3" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dots" parent="1" style="strokeColor=none;fillColor=none;fontSize=28;fontStyle=1;align=center;" value="•••" vertex="1">
+          <mxGeometry height="40" width="80" x="1060" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="keys" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#4A7CC7;fillColor=#F5F9FF;fontSize=14;strokeWidth=1.5;" value="KEY NOTES  • All edge hosts are managed centrally by vCenter at the Data Center. • VCF Operations 9 provides licensing and health monitoring for managed hosts. • Edge sites require network connectivity to the Data Center for management and licensing. • During host upgrade, VMs on that host will be unavailable." vertex="1">
+          <mxGeometry height="185" width="280" x="20" y="930" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#A7A7A7;fillColor=#FFFFFF;fontSize=12;strokeWidth=1;" value="LEGEND  →  Manages / Controls ⇢  Internet Connection →  Site WAN Connection - -  Infrastructure / External" vertex="1">
+          <mxGeometry height="185" width="190" x="320" y="930" as="geometry" />
+        </mxCell>
+        <mxCell id="req" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#E4A13A;fillColor=#FFF9EF;fontSize=12;strokeWidth=1.2;" value="REQUIREMENTS SUMMARY  ✓ Broadcom subscription for VVF/VCF 9 ✓ VCF Operations 9 deployed at Data Center ✓ vCenter Server 9 at Data Center ✓ Reliable WAN/VPN from all edge sites ✓ DNS, NTP, AD/LDAP reachable from Data Center ✓ Time sync and proper name resolution ✓ Backup solution for all edge sites" vertex="1">
+          <mxGeometry height="185" width="410" x="530" y="930" as="geometry" />
+        </mxCell>
+        <mxCell id="rb" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#D96A6A;fillColor=#FFF7F7;fontSize=12;strokeWidth=1.2;" value="ROLLBACK CONSIDERATIONS  ↶ If upgrade fails before reboot: cancel and remain on ESXi 8.  If upgrade fails after reboot and host will not boot: • Use ESXi 8 installer to reinstall if bootable and restore configuration. • Restore VMs from backups if required." vertex="1">
+          <mxGeometry height="185" width="310" x="960" y="930" as="geometry" />
+        </mxCell>
+        <mxCell id="final" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#5B9B58;fillColor=#F6FBF4;fontSize=14;strokeWidth=1.5;" value="FINAL STATE (After Upgrade)  ✓ All edge hosts running ESX 9 ✓ Managed by vCenter 9 at Data Center ✓ Licensed via VCF Operations 9 ✓ Workloads operational" vertex="1">
+          <mxGeometry height="185" width="240" x="1290" y="930" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
