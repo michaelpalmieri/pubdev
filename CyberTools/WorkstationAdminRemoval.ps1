@@ -9,21 +9,24 @@
         - Remote computer name
         - Active Directory username
 
-    The script then connects to the remote computer using PowerShell Remoting,
-    checks the local Administrators group for the specified user, displays the
-    matching account, and prompts for confirmation before removing the user.
+    The script then:
 
-    After removal, the script performs a verification check to confirm that
-    the account is no longer a direct member of the local Administrators group.
+        1. Tests connectivity to the remote workstation.
+        2. Verifies that PowerShell Remoting is available.
+        3. Checks whether the specified user is a direct member of the
+           local Administrators group.
+        4. Displays the matching account.
+        5. Requires explicit confirmation before making any change.
+        6. Removes the user from the local Administrators group.
+        7. Verifies that the account was successfully removed.
 
     IMPORTANT:
-    This script removes only DIRECT membership from the local Administrators
-    group.
+    This script removes only DIRECT user membership from the local
+    Administrators group.
 
-    If the user receives administrator rights because they belong to an
-    Active Directory group that is itself a member of the local Administrators
-    group, removing the individual account will NOT remove those inherited
-    administrator rights.
+    If the user has administrator privileges through an Active Directory
+    group that is a member of the local Administrators group, those
+    inherited privileges will not be removed.
 
 .AUTHOR
     Michael Palmieri
@@ -59,12 +62,25 @@
 
 Clear-Host
 
+# Set the PowerShell console window title.
+$Host.UI.RawUI.WindowTitle = "Remote Local Administrator Management"
+
 Write-Host ""
-Write-Host "============================================================" -ForegroundColor Red
-Write-Host "      REMOVE USER FROM REMOTE LOCAL ADMINISTRATORS" -ForegroundColor Yellow
-Write-Host "============================================================" -ForegroundColor Red
+Write-Host "  Remote Local Administrator Management" -ForegroundColor Cyan
+Write-Host "  --------------------------------------" -ForegroundColor DarkGray
 Write-Host ""
-Write-Host "USE AT YOUR OWN RISK." -ForegroundColor Red
+Write-Host "  Remove an Active Directory user from the local" -ForegroundColor Gray
+Write-Host "  Administrators group on a remote workstation." -ForegroundColor Gray
+Write-Host ""
+
+# Display a concise safety warning.
+Write-Host "  WARNING" -ForegroundColor Yellow
+Write-Host "  Use at your own risk. Changes affect local administrator access." `
+    -ForegroundColor DarkYellow
+
+Write-Host ""
+Write-Host "  ------------------------------------------------------------" `
+    -ForegroundColor DarkGray
 Write-Host ""
 
 
@@ -72,16 +88,21 @@ Write-Host ""
 #                  PROMPT FOR COMPUTER NAME
 # ============================================================
 
-$ComputerName = Read-Host "Enter the remote computer name"
+Write-Host "  Target Computer" -ForegroundColor Cyan
+Write-Host "  Example: PC-12345" -ForegroundColor DarkGray
 
-# Remove accidental leading/trailing spaces.
+$ComputerName = Read-Host "  Computer Name"
+
+# Remove accidental leading or trailing spaces.
 $ComputerName = $ComputerName.Trim()
 
-# Make sure a computer name was entered.
+# Validate that a computer name was entered.
 if ([string]::IsNullOrWhiteSpace($ComputerName)) {
 
     Write-Host ""
-    Write-Host "ERROR: A computer name was not entered." -ForegroundColor Red
+    Write-Host "  [ERROR] A computer name was not entered." -ForegroundColor Red
+    Write-Host ""
+
     exit 1
 }
 
@@ -91,11 +112,11 @@ if ([string]::IsNullOrWhiteSpace($ComputerName)) {
 # ============================================================
 
 Write-Host ""
-Write-Host "Testing connection to $ComputerName..." -ForegroundColor Cyan
+Write-Host "  Checking connection to $ComputerName..." -ForegroundColor Gray
 
 # Ping is used only as an initial connectivity check.
-# Some environments block ICMP. If yours does, you can remove
-# this section and rely on Test-WSMan instead.
+# Some organizations block ICMP, so failure here does not
+# automatically stop the script.
 
 if (!(Test-Connection `
         -ComputerName $ComputerName `
@@ -103,12 +124,15 @@ if (!(Test-Connection `
         -Quiet `
         -ErrorAction SilentlyContinue)) {
 
-    Write-Host ""
-    Write-Host "WARNING: $ComputerName did not respond to ping." `
+    Write-Host "  [WARNING] No ping response from $ComputerName." `
         -ForegroundColor Yellow
 
-    Write-Host "The system may be offline or ICMP may be blocked." `
-        -ForegroundColor Yellow
+    Write-Host "            The computer may be offline or ICMP may be blocked." `
+        -ForegroundColor DarkYellow
+}
+else {
+
+    Write-Host "  [OK] Computer responded to ping." -ForegroundColor Green
 }
 
 
@@ -116,8 +140,7 @@ if (!(Test-Connection `
 #                    TEST POWERSHELL REMOTING
 # ============================================================
 
-Write-Host ""
-Write-Host "Testing PowerShell Remoting..." -ForegroundColor Cyan
+Write-Host "  Checking PowerShell Remoting..." -ForegroundColor Gray
 
 try {
 
@@ -126,24 +149,25 @@ try {
         -ErrorAction Stop |
         Out-Null
 
-    Write-Host "PowerShell Remoting is available." -ForegroundColor Green
+    Write-Host "  [OK] PowerShell Remoting is available." -ForegroundColor Green
 }
 catch {
 
     Write-Host ""
-    Write-Host "ERROR: Unable to establish a PowerShell Remoting connection." `
+    Write-Host "  [ERROR] Unable to connect using PowerShell Remoting." `
         -ForegroundColor Red
 
     Write-Host ""
-    Write-Host "Computer: $ComputerName" -ForegroundColor White
-    Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
-
+    Write-Host "  Computer : $ComputerName" -ForegroundColor White
+    Write-Host "  Details  : $($_.Exception.Message)" -ForegroundColor DarkGray
     Write-Host ""
-    Write-Host "Verify:" -ForegroundColor Yellow
-    Write-Host "  - The computer is online"
-    Write-Host "  - WinRM / PowerShell Remoting is enabled"
-    Write-Host "  - Windows Firewall permits WinRM"
-    Write-Host "  - You have administrative rights"
+
+    Write-Host "  Verify the following:" -ForegroundColor Yellow
+    Write-Host "    - The workstation is online"
+    Write-Host "    - WinRM / PowerShell Remoting is enabled"
+    Write-Host "    - Windows Firewall permits WinRM"
+    Write-Host "    - Your account has administrative rights"
+    Write-Host ""
 
     exit 1
 }
@@ -154,15 +178,21 @@ catch {
 # ============================================================
 
 Write-Host ""
+Write-Host "  Active Directory User" -ForegroundColor Cyan
+Write-Host "  Examples: jsmith, DOMAIN\jsmith, jsmith@domain.com" `
+    -ForegroundColor DarkGray
 
-$UserName = Read-Host "Enter the user's Active Directory username (example: jsmith)"
+$UserName = Read-Host "  Username"
 
 $UserName = $UserName.Trim()
 
+# Validate that a username was entered.
 if ([string]::IsNullOrWhiteSpace($UserName)) {
 
     Write-Host ""
-    Write-Host "ERROR: A username was not entered." -ForegroundColor Red
+    Write-Host "  [ERROR] A username was not entered." -ForegroundColor Red
+    Write-Host ""
+
     exit 1
 }
 
@@ -171,7 +201,7 @@ if ([string]::IsNullOrWhiteSpace($UserName)) {
 #                 NORMALIZE USERNAME INPUT
 # ============================================================
 
-# Allow the administrator to enter:
+# Allow the administrator to enter any of these forms:
 #
 #     jsmith
 #     DOMAIN\jsmith
@@ -181,22 +211,28 @@ if ([string]::IsNullOrWhiteSpace($UserName)) {
 
 $SamAccountName = $UserName
 
-# If DOMAIN\username was entered, keep only username.
+# Convert DOMAIN\username to username.
 if ($SamAccountName -like "*\*") {
 
     $SamAccountName = $SamAccountName.Split("\")[-1]
 }
 
-# If username@domain.com was entered, keep only username.
+# Convert username@domain.com to username.
 if ($SamAccountName -like "*@*") {
 
     $SamAccountName = $SamAccountName.Split("@")[0]
 }
 
 
+# ============================================================
+#                    DISPLAY TARGET SUMMARY
+# ============================================================
+
 Write-Host ""
-Write-Host "Target Computer : $ComputerName" -ForegroundColor Cyan
-Write-Host "Target User     : $SamAccountName" -ForegroundColor Cyan
+Write-Host "  Target Summary" -ForegroundColor Cyan
+Write-Host "  --------------" -ForegroundColor DarkGray
+Write-Host ("  Computer : {0}" -f $ComputerName) -ForegroundColor White
+Write-Host ("  User     : {0}" -f $SamAccountName) -ForegroundColor White
 Write-Host ""
 
 
@@ -204,7 +240,7 @@ Write-Host ""
 #          CHECK LOCAL ADMINISTRATORS GROUP MEMBERSHIP
 # ============================================================
 
-Write-Host "Checking local Administrators group..." -ForegroundColor Cyan
+Write-Host "  Checking local Administrators group..." -ForegroundColor Gray
 
 try {
 
@@ -217,15 +253,15 @@ try {
                 $TargetUser
             )
 
-            # Retrieve all members of the local Administrators group.
+            # Retrieve all direct members of the local
+            # Administrators group.
             $Admins = Get-LocalGroupMember `
                 -Group "Administrators" `
                 -ErrorAction Stop
 
-            # Look specifically for USER objects whose account name
-            # matches the requested username.
+            # Search only USER objects.
             #
-            # Examples:
+            # Match forms such as:
             #
             # DOMAIN\jsmith
             # COMPUTER\jsmith
@@ -239,7 +275,11 @@ try {
                         $_.Name -like "*\$TargetUser"
                     )
                 } |
-                Select-Object Name, ObjectClass, PrincipalSource, SID
+                Select-Object `
+                    Name,
+                    ObjectClass,
+                    PrincipalSource,
+                    SID
 
         } `
         -ErrorAction Stop
@@ -248,10 +288,11 @@ try {
 catch {
 
     Write-Host ""
-    Write-Host "ERROR: Unable to query the Administrators group." `
+    Write-Host "  [ERROR] Unable to query the local Administrators group." `
         -ForegroundColor Red
 
-    Write-Host $_.Exception.Message -ForegroundColor Red
+    Write-Host "  Details: $($_.Exception.Message)" -ForegroundColor DarkGray
+    Write-Host ""
 
     exit 1
 }
@@ -264,25 +305,19 @@ catch {
 if (!$MatchingAdmins) {
 
     Write-Host ""
-    Write-Host "------------------------------------------------------------" `
-        -ForegroundColor Yellow
-
-    Write-Host "No direct local Administrator membership was found for:" `
+    Write-Host "  [INFO] No direct administrator membership was found." `
         -ForegroundColor Yellow
 
     Write-Host ""
-    Write-Host "    $SamAccountName" -ForegroundColor White
+    Write-Host ("  Computer : {0}" -f $ComputerName) -ForegroundColor White
+    Write-Host ("  User     : {0}" -f $SamAccountName) -ForegroundColor White
     Write-Host ""
-    Write-Host "Computer: $ComputerName" -ForegroundColor White
 
-    Write-Host ""
-    Write-Host "NOTE:" -ForegroundColor Cyan
+    Write-Host "  The user may still have administrator access through an" `
+        -ForegroundColor DarkYellow
 
-    Write-Host "The user could still have administrator rights through an" `
-        -ForegroundColor Cyan
-
-    Write-Host "Active Directory group that is a member of Administrators." `
-        -ForegroundColor Cyan
+    Write-Host "  Active Directory group that is a member of Administrators." `
+        -ForegroundColor DarkYellow
 
     Write-Host ""
 
@@ -295,7 +330,8 @@ if (!$MatchingAdmins) {
 # ============================================================
 
 Write-Host ""
-Write-Host "Administrator membership found:" -ForegroundColor Green
+Write-Host "  Administrator Membership Found" -ForegroundColor Green
+Write-Host "  ------------------------------" -ForegroundColor DarkGray
 Write-Host ""
 
 $MatchingAdmins |
@@ -311,16 +347,17 @@ $MatchingAdmins |
 #                    SAFETY CHECK
 # ============================================================
 
-# If somehow more than one matching account was returned,
-# stop rather than blindly removing multiple accounts.
+# If more than one account matches the supplied username,
+# stop rather than potentially removing the wrong account.
 
 if (@($MatchingAdmins).Count -gt 1) {
 
     Write-Host ""
-    Write-Host "WARNING: More than one matching account was found." `
+    Write-Host "  [ERROR] More than one matching account was found." `
         -ForegroundColor Red
 
-    Write-Host "No changes were made." -ForegroundColor Yellow
+    Write-Host "  No changes were made." -ForegroundColor Yellow
+    Write-Host ""
 
     exit 1
 }
@@ -335,28 +372,27 @@ $ExactAccountName = $MatchingAdmins.Name
 # ============================================================
 
 Write-Host ""
-Write-Host "============================================================" `
-    -ForegroundColor Red
-
-Write-Host "WARNING: YOU ARE ABOUT TO CHANGE ADMINISTRATOR MEMBERSHIP" `
-    -ForegroundColor Red
-
-Write-Host "============================================================" `
-    -ForegroundColor Red
-
-Write-Host ""
-Write-Host "Computer : $ComputerName" -ForegroundColor Yellow
-Write-Host "Account  : $ExactAccountName" -ForegroundColor Yellow
+Write-Host "  Confirmation Required" -ForegroundColor Yellow
+Write-Host "  ---------------------" -ForegroundColor DarkGray
 Write-Host ""
 
-$Confirmation = Read-Host "Type YES to remove this account from local Administrators"
+Write-Host ("  Computer : {0}" -f $ComputerName) -ForegroundColor White
+Write-Host ("  Account  : {0}" -f $ExactAccountName) -ForegroundColor White
+Write-Host ""
 
-# Require an explicit YES.
+Write-Host "  This will remove the account from the local Administrators group." `
+    -ForegroundColor DarkYellow
+
+Write-Host ""
+
+$Confirmation = Read-Host "  Type YES to continue"
+
+# Require the administrator to type YES exactly.
 if ($Confirmation -ne "YES") {
 
     Write-Host ""
-    Write-Host "Operation cancelled. No changes were made." `
-        -ForegroundColor Yellow
+    Write-Host "  [CANCELLED] No changes were made." -ForegroundColor Yellow
+    Write-Host ""
 
     exit 0
 }
@@ -367,8 +403,8 @@ if ($Confirmation -ne "YES") {
 # ============================================================
 
 Write-Host ""
-Write-Host "Removing $ExactAccountName from Administrators..." `
-    -ForegroundColor Cyan
+Write-Host "  Removing $ExactAccountName from local Administrators..." `
+    -ForegroundColor Gray
 
 try {
 
@@ -381,8 +417,8 @@ try {
                 $AccountName
             )
 
-            # Remove the exact account from the built-in
-            # local Administrators group.
+            # Remove the exact account returned by
+            # Get-LocalGroupMember.
             Remove-LocalGroupMember `
                 -Group "Administrators" `
                 -Member $AccountName `
@@ -395,10 +431,11 @@ try {
 catch {
 
     Write-Host ""
-    Write-Host "ERROR: The account could not be removed." `
+    Write-Host "  [ERROR] The account could not be removed." `
         -ForegroundColor Red
 
-    Write-Host $_.Exception.Message -ForegroundColor Red
+    Write-Host "  Details: $($_.Exception.Message)" -ForegroundColor DarkGray
+    Write-Host ""
 
     exit 1
 }
@@ -408,8 +445,7 @@ catch {
 #                      VERIFY REMOVAL
 # ============================================================
 
-Write-Host ""
-Write-Host "Verifying removal..." -ForegroundColor Cyan
+Write-Host "  Verifying removal..." -ForegroundColor Gray
 
 try {
 
@@ -422,6 +458,8 @@ try {
                 $AccountName
             )
 
+            # Query the Administrators group again and check
+            # whether the exact account is still present.
             Get-LocalGroupMember `
                 -Group "Administrators" `
                 -ErrorAction Stop |
@@ -437,10 +475,11 @@ try {
 catch {
 
     Write-Host ""
-    Write-Host "WARNING: Removal was attempted, but verification failed." `
+    Write-Host "  [WARNING] Removal was attempted, but verification failed." `
         -ForegroundColor Yellow
 
-    Write-Host $_.Exception.Message -ForegroundColor Yellow
+    Write-Host "  Details: $($_.Exception.Message)" -ForegroundColor DarkGray
+    Write-Host ""
 
     exit 1
 }
@@ -453,35 +492,32 @@ catch {
 if (!$StillAdmin) {
 
     Write-Host ""
-    Write-Host "============================================================" `
-        -ForegroundColor Green
-
-    Write-Host "                    REMOVAL SUCCESSFUL" `
-        -ForegroundColor Green
-
-    Write-Host "============================================================" `
+    Write-Host "  [SUCCESS] Administrator access removed." `
         -ForegroundColor Green
 
     Write-Host ""
-    Write-Host "Computer : $ComputerName" -ForegroundColor White
-    Write-Host "Removed  : $ExactAccountName" -ForegroundColor White
-
+    Write-Host ("  Computer : {0}" -f $ComputerName) -ForegroundColor White
+    Write-Host ("  Account  : {0}" -f $ExactAccountName) -ForegroundColor White
     Write-Host ""
-    Write-Host "The account is no longer a DIRECT member of the" `
+
+    Write-Host "  The account is no longer a direct member of the" `
         -ForegroundColor Green
 
-    Write-Host "local Administrators group." -ForegroundColor Green
-
+    Write-Host "  local Administrators group." `
+        -ForegroundColor Green
 }
 else {
 
     Write-Host ""
-    Write-Host "WARNING: The account still appears in Administrators." `
-        -ForegroundColor Red
+    Write-Host "  [WARNING] The account still appears in the local" `
+        -ForegroundColor Yellow
+
+    Write-Host "            Administrators group." `
+        -ForegroundColor Yellow
 
     Write-Host ""
-    Write-Host "No further automated action was taken." `
-        -ForegroundColor Yellow
+    Write-Host "  No additional automated changes were attempted." `
+        -ForegroundColor DarkYellow
 }
 
 
@@ -490,5 +526,9 @@ else {
 # ============================================================
 
 Write-Host ""
-Write-Host "USE AT YOUR OWN RISK." -ForegroundColor Red
+Write-Host "  ------------------------------------------------------------" `
+    -ForegroundColor DarkGray
+
+Write-Host ""
+Write-Host "  Script End." -ForegroundColor DarkYellow
 Write-Host ""
